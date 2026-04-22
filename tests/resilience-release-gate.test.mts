@@ -49,12 +49,24 @@ function installRedisFixtures() {
 
 describe('resilience release gate', () => {
   it('keeps all 19 dimension scorers non-placeholder for the required countries', async () => {
+    // PR 3 §3.5: fuelStockDays is retired — scoreFuelStockDays emits
+    // coverage=0 + imputationClass='source-failure' for every country.
+    // The retirement is intentional (construct incomparable across
+    // net importers / net exporters). Allow-list it so the zero-coverage
+    // placeholder check still catches unintended regressions in the
+    // OTHER 18 dimensions.
+    const RETIRED_DIMENSIONS = new Set(['fuelStockDays']);
     for (const countryCode of REQUIRED_DIMENSION_COUNTRIES) {
       const scores = await scoreAllDimensions(countryCode, fixtureReader);
       const entries = Object.entries(scores);
       assert.equal(entries.length, 19, `${countryCode} should have all resilience dimensions`);
       for (const [dimensionId, score] of entries) {
         assert.ok(Number.isFinite(score.score), `${countryCode} ${dimensionId} should produce a numeric score`);
+        if (RETIRED_DIMENSIONS.has(dimensionId)) {
+          assert.equal(score.coverage, 0, `${countryCode} ${dimensionId} is retired and must stay at coverage=0`);
+          assert.equal(score.imputationClass, 'source-failure', `${countryCode} ${dimensionId} retired dimensions must tag source-failure`);
+          continue;
+        }
         assert.ok(score.coverage > 0, `${countryCode} ${dimensionId} should not fall back to zero-coverage placeholder scoring`);
       }
     }

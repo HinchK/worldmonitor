@@ -60,10 +60,14 @@ describe('resilience scorer contracts', () => {
     //     source-failure when the adapter is in seed-meta failedDatasets. This is the
     //     single source of truth for "no currency data"; null-imputationClass paths
     //     on non-real-data return branches are no longer permitted.
+    // PR 3 §3.5: fuelStockDays removed from this set — scoreFuelStockDays
+    // now returns coverage=0 + imputationClass='source-failure' for every
+    // country (retired), so it passes the default coverage=0 assertion
+    // below instead of the T1.7 fall-through assertion.
     const coverageZeroExempt = new Set([
       'currencyExternal',
       'fiscalSpace', 'reserveAdequacy', 'externalDebtCoverage',
-      'importConcentration', 'stateContinuity', 'fuelStockDays',
+      'importConcentration', 'stateContinuity',
     ]);
     for (const [dimensionId, scorer] of Object.entries(RESILIENCE_DIMENSION_SCORERS)) {
       const result = await scorer('US');
@@ -126,9 +130,16 @@ describe('resilience scorer contracts', () => {
     const stressScore = round(coverageWeightedMean(stressDims));
     const stressFactor = round(Math.max(0, Math.min(1 - stressScore / 100, 0.5)), 4);
 
-    assert.equal(baselineScore, 62.64);
-    assert.equal(stressScore, 65.84);
-    assert.equal(stressFactor, 0.3416);
+    // PR 3 §3.5: 62.64 → 63.63 after fuelStockDays retirement (coverage=0
+    // drops it from baselineDims coverage-weighted mean; the remaining
+    // baseline+mixed dims re-weight slightly higher).
+    assert.equal(baselineScore, 63.63);
+    // PR 3 §3.5: 65.84 → 67.85 after fuelStockDays retirement (same
+    // coverage-weighted re-weighting as baselineScore, applied to
+    // stress+mixed dims). stressFactor updates in lockstep:
+    //   1 - 67.85/100 = 0.3215, clamped to 0.5.
+    assert.equal(stressScore, 67.85);
+    assert.equal(stressFactor, 0.3215);
 
     const overallScore = round(
       RESILIENCE_DOMAIN_ORDER.map((domainId) => {
@@ -140,7 +151,10 @@ describe('resilience scorer contracts', () => {
         return round(cwMean) * getResilienceDomainWeight(domainId);
       }).reduce((sum, v) => sum + v, 0),
     );
-    assert.equal(overallScore, 65.57);
+    // PR 3 §3.5: 65.57 → 65.82 after fuelStockDays was retired (coverage=0
+    // drops the dimension from the recovery domain's coverage-weighted
+    // mean; remaining recovery dimensions pick up the share).
+    assert.equal(overallScore, 65.82);
   });
 
   it('baselineScore is computed from baseline + mixed dimensions only', async () => {
@@ -211,7 +225,7 @@ describe('resilience scorer contracts', () => {
     );
 
     assert.ok(expected > 0, 'overall should be positive');
-    assert.equal(expected, 65.57, 'overallScore should match sum(domainScore * domainWeight)');
+    assert.equal(expected, 65.82, 'overallScore should match sum(domainScore * domainWeight); 65.57 → 65.82 after PR 3 §3.5 fuelStockDays retirement');
   });
 
   it('stressFactor is still computed (informational) and clamped to [0, 0.5]', () => {

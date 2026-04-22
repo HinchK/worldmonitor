@@ -258,7 +258,11 @@ const RESILIENCE_RECOVERY_FISCAL_SPACE_KEY = 'resilience:recovery:fiscal-space:v
 const RESILIENCE_RECOVERY_RESERVE_ADEQUACY_KEY = 'resilience:recovery:reserve-adequacy:v1';
 const RESILIENCE_RECOVERY_EXTERNAL_DEBT_KEY = 'resilience:recovery:external-debt:v1';
 const RESILIENCE_RECOVERY_IMPORT_HHI_KEY = 'resilience:recovery:import-hhi:v1';
-const RESILIENCE_RECOVERY_FUEL_STOCKS_KEY = 'resilience:recovery:fuel-stocks:v1';
+// RESILIENCE_RECOVERY_FUEL_STOCKS_KEY removed in PR 3: scoreFuelStockDays
+// no longer reads any source key. If a new globally-comparable
+// recovery-fuel concept lands in a future PR, add a new key with an
+// explicit semantic (e.g. resilience:fuel-import-volatility:v1) rather
+// than resurrecting this one.
 
 // PR 1 energy-construct v2 seed keys (plan §3.1–§3.3). Written by
 // scripts/seed-low-carbon-generation.mjs, scripts/seed-fossil-
@@ -1407,11 +1411,11 @@ interface RecoveryImportHhiCountry {
   year?: number | null;
 }
 
-interface RecoveryFuelStocksCountry {
-  fuelStockDays?: number | null;
-  meetsObligation?: boolean | null;
-  belowObligation?: boolean | null;
-}
+// RecoveryFuelStocksCountry interface removed in PR 3 — scoreFuelStockDays
+// no longer reads any payload. Do NOT re-add the type as a reservation;
+// the tsc noUnusedLocals rule rejects unused locals. When a new
+// recovery-fuel concept lands, introduce a fresh interface with a
+// different name + the actual shape it needs.
 
 function getRecoveryCountryEntry<T>(raw: unknown, countryCode: string): T | null {
   const countries = (raw as { countries?: Record<string, T> } | null)?.countries;
@@ -1551,26 +1555,45 @@ export async function scoreStateContinuity(
   ]);
 }
 
+// PR 3 §3.5 point 1: retired permanently from the core score. IEA
+// emergency-stockholding rules are defined in days of NET IMPORTS
+// and do not bind net exporters by design; the net-importer vs net-
+// exporter framings are incomparable, so no global resilience signal
+// can be built from this data. Published coverage for the IEA/EIA
+// connector sat at 100% imputed at 50 for every country in the
+// pre-repair probe (`fuelStockDays` was `source-failure` for every
+// ISO in the April 2026 freeze snapshot).
+//
+// Returning `coverage: 0` + `observedWeight: 0` drops the dimension
+// from the `recovery` domain's coverage-weighted mean entirely; the
+// remaining recovery dimensions pick up its share of the domain
+// weight via auto-redistribution (no explicit weight transfer needed
+// — `coverageWeightedMean` in `_shared.ts` already does this).
+//
+// Does NOT return in PR 4. A new globally-comparable recovery-fuel
+// concept (e.g. fuel-import-volatility or strategic-buffer-ratio
+// with a unified net-importer/net-exporter definition) could replace
+// this scorer in a future PR, but that is out of scope for the
+// first-publication repair.
+//
+// The dimension `fuelStockDays` remains in `RESILIENCE_DIMENSION_ORDER`
+// for structural continuity (tests, pillar membership, registry
+// shape); retiring the dimension entirely is a PR 4 structural-audit
+// concern. The `recoveryFuelStockDays` indicator is re-tagged as
+// `tier: 'experimental'` in the registry so the Core coverage gate
+// does not consider it active.
 export async function scoreFuelStockDays(
-  countryCode: string,
-  reader: ResilienceSeedReader = defaultSeedReader,
+  _countryCode: string,
+  _reader: ResilienceSeedReader = defaultSeedReader,
 ): Promise<ResilienceDimensionScore> {
-  const raw = await reader(RESILIENCE_RECOVERY_FUEL_STOCKS_KEY);
-  const entry = getRecoveryCountryEntry<RecoveryFuelStocksCountry>(raw, countryCode);
-  // The seeder writes `fuelStockDays`, not `stockDays`.
-  if (!entry || entry.fuelStockDays == null) {
-    return {
-      score: IMPUTE.recoveryFuelStocks.score,
-      coverage: IMPUTE.recoveryFuelStocks.certaintyCoverage,
-      observedWeight: 0,
-      imputedWeight: 1,
-      imputationClass: IMPUTE.recoveryFuelStocks.imputationClass,
-      freshness: { lastObservedAtMs: 0, staleness: '' },
-    };
-  }
-  return weightedBlend([
-    { score: normalizeHigherBetter(Math.min(entry.fuelStockDays, 120), 0, 120), weight: 1.0 },
-  ]);
+  return {
+    score: 50,
+    coverage: 0,
+    observedWeight: 0,
+    imputedWeight: 0,
+    imputationClass: 'source-failure',
+    freshness: { lastObservedAtMs: 0, staleness: '' },
+  };
 }
 
 export const RESILIENCE_DIMENSION_SCORERS: Record<

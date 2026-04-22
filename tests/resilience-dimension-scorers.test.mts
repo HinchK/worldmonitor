@@ -1167,17 +1167,23 @@ describe('resilience source-failure aggregation (T1.7)', () => {
     assert.equal(no.imputationClass, null, 'NO has real data, no imputation class');
   });
 
-  it('scoreFuelStockDays: country with stock data scores based on coverage', async () => {
+  // PR 3 §3.5: fuelStockDays retired permanently from the core score.
+  // scoreFuelStockDays returns coverage=0 + observedWeight=0 +
+  // imputationClass='source-failure' for every country regardless of
+  // seed content — the previous two behavioural tests no longer apply
+  // because there is no distinction between "has data" and "missing data"
+  // any more. New regression test: assert the retirement shape holds
+  // identically for a country that USED to have data and a country that
+  // never did, so no future commit silently re-enables the old branch.
+  it('scoreFuelStockDays: retired — returns coverage=0 + source-failure for every country', async () => {
     const no = await scoreFuelStockDays('NO', fixtureReader);
-    // NO fixture: fuelStockDays=90 → normalizeHigherBetter(90, 0, 120) = 75
-    assert.ok(no.score > 60, `NO with 90 fuelStockDays should score >60, got ${no.score}`);
-    assert.ok(no.observedWeight > 0, 'real fuel-stock data must have observed weight');
-  });
-
-  it('scoreFuelStockDays: country without fuel stock data returns unmonitored', async () => {
     const ye = await scoreFuelStockDays('YE', fixtureReader);
-    assert.equal(ye.imputationClass, 'unmonitored');
-    assert.equal(ye.observedWeight, 0);
+    for (const [label, result] of [['NO', no], ['YE', ye]] as const) {
+      assert.equal(result.coverage, 0, `${label}: retired dimension must have coverage=0`);
+      assert.equal(result.observedWeight, 0, `${label}: retired dimension must have observedWeight=0`);
+      assert.equal(result.imputedWeight, 0, `${label}: retired dimension must have imputedWeight=0`);
+      assert.equal(result.imputationClass, 'source-failure', `${label}: retired dimension must tag source-failure`);
+    }
   });
 
   it('recovery domain is present in scoreAllDimensions output', async () => {

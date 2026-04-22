@@ -978,17 +978,27 @@ export const INDICATOR_REGISTRY: IndicatorSpec[] = [
   },
 
   // ── fuelStockDays (1 sub-metric) ─────────────────────────────────────────
+  // PR 3 §3.5 point 1: RETIRED from the core score. IEA emergency-
+  // stockholding is defined in days of NET IMPORTS; the net-importer
+  // vs net-exporter framings are incomparable, so no global resilience
+  // signal can be built from this data. scoreFuelStockDays now returns
+  // coverage=0 + imputationClass='source-failure' for every country,
+  // which drops the dimension from the recovery domain's coverage-
+  // weighted mean. The registry entry stays at tier='experimental' so
+  // the Core coverage gate treats it as out-of-score; the dimension
+  // itself remains registered for structural continuity (PR 4
+  // structural-audit may remove it entirely).
   {
     id: 'recoveryFuelStockDays',
     dimension: 'fuelStockDays',
-    description: 'Days of fuel stock cover (IEA Oil Stocks / EIA Weekly Petroleum Status); strategic buffer for energy-dependent recovery',
+    description: 'RETIRED in PR 3. Legacy days-of-fuel-stock-cover (IEA Oil Stocks / EIA Weekly Petroleum Status). Does not contribute to the score — scoreFuelStockDays returns coverage=0 + imputationClass=source-failure. Kept in the registry as tier=experimental for structural continuity; a globally-comparable recovery-fuel concept could replace this in a future PR.',
     direction: 'higherBetter',
     goalposts: { worst: 0, best: 120 },
     weight: 1.0,
     sourceKey: 'resilience:recovery:fuel-stocks:v1',
     scope: 'global',
     cadence: 'monthly',
-    tier: 'enrichment',
+    tier: 'experimental',
     coverage: 45,
     license: 'open-data',
   },
