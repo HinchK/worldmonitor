@@ -44,6 +44,7 @@ jobs:
       - run: npm run lint
       - run: npm run lint:boundaries
       - run: npm run lint:api-contract
+      - run: npm run lint:premium-fetch
       - name: Markdown lint
         run: npm run lint:md
       - name: Version sync check

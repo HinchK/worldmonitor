@@ -68,6 +68,9 @@ npm run lint:boundaries || exit 1
 echo "Running rate-limit policy coverage check..."
 npm run lint:rate-limit-policies || exit 1
 
+echo "Running premium-fetch parity check..."
+npm run lint:premium-fetch || exit 1
+
 echo "Running edge function bundle check..."
 while IFS= read -r f; do
   npx esbuild "$f" --bundle --format=esm --platform=browser --outfile=/dev/null 2>/dev/null || {

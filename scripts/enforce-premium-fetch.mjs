@@ -1,0 +1,232 @@
+#!/usr/bin/env node
+/**
+ * Validates that every `new <ServiceClient>(...)` instantiation in src/ which
+ * calls a method whose generated path is in PREMIUM_RPC_PATHS is constructed
+ * with `{ fetch: premiumFetch }`.
+ *
+ * Catches the HIGH(new) #1 class from #3242 review — SupplyChainServiceClient
+ * was constructed with globalThis.fetch (the generated default) and pro users
+ * silently got 401s the generated client swallowed into empty-fallback panels.
+ * Same class as #3233 (RegionalIntelligenceBoard / DeductionPanel / trade /
+ * country-intel) which was fixed manually because there was no enforcement.
+ *
+ * How it works:
+ *   1. Parse src/shared/premium-paths.ts → set of premium HTTP paths.
+ *   2. Walk src/generated/client/ → map each ServiceClient class to its
+ *      method-name → path table (the `let path = "/api/..."` line each
+ *      generated method opens with).
+ *   3. Walk src/ (excluding generated) with the TypeScript AST. For each
+ *      `new <ClassName>(...)` (variable decl OR `this.foo =` assignment):
+ *        a. Capture the bound variable / member name.
+ *        b. Find every `<varName>.<method>(...)` call in the same file.
+ *        c. If any called method has a premium path, the construction MUST
+ *           use { fetch: premiumFetch }. Anything else fails the lint.
+ *
+ * Per-call-site analysis lets the trade/index.ts pattern (publicClient with
+ * globalThis.fetch + premiumClient with premiumFetch on the same class)
+ * stay clean, since publicClient never calls a premium method.
+ */
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join, relative, basename } from 'node:path';
+import ts from 'typescript';
+
+const ROOT = new URL('..', import.meta.url).pathname;
+const PREMIUM_PATHS_SRC = join(ROOT, 'src/shared/premium-paths.ts');
+const GEN_CLIENT_DIR = join(ROOT, 'src/generated/client');
+const SRC_DIR = join(ROOT, 'src');
+
+function walk(dir, fn) {
+  for (const name of readdirSync(dir)) {
+    const full = join(dir, name);
+    const s = statSync(full);
+    if (s.isDirectory()) walk(full, fn);
+    else if (s.isFile()) fn(full);
+  }
+}
+
+function loadPremiumPaths() {
+  const src = readFileSync(PREMIUM_PATHS_SRC, 'utf8');
+  const re = /'(\/api\/[^']+)'/g;
+  const paths = new Set();
+  let m;
+  while ((m = re.exec(src)) !== null) paths.add(m[1]);
+  if (paths.size === 0) {
+    throw new Error(`No premium paths parsed from ${PREMIUM_PATHS_SRC}`);
+  }
+  return paths;
+}
+
+function loadClientClassMap() {
+  const map = new Map();
+  walk(GEN_CLIENT_DIR, (file) => {
+    if (basename(file) !== 'service_client.ts') return;
+    const src = readFileSync(file, 'utf8');
+    const classRe = /export class (\w+ServiceClient)\s*\{/g;
+    const classMatch = classRe.exec(src);
+    if (!classMatch) return;
+    const className = classMatch[1];
+    const methods = new Map();
+    const methodRe = /async (\w+)\s*\([^)]*\)\s*:\s*Promise<[^>]+>\s*\{\s*let path = "([^"]+)"/g;
+    let mm;
+    while ((mm = methodRe.exec(src)) !== null) {
+      methods.set(mm[1], mm[2]);
+    }
+    map.set(className, methods);
+  });
+  if (map.size === 0) {
+    throw new Error(`No ServiceClient classes parsed from ${GEN_CLIENT_DIR}`);
+  }
+  return map;
+}
+
+function collectSourceFiles() {
+  const out = [];
+  walk(SRC_DIR, (file) => {
+    if (file.startsWith(GEN_CLIENT_DIR)) return;
+    if (!/\.(ts|tsx)$/.test(file)) return;
+    if (file.endsWith('.d.ts')) return;
+    out.push(file);
+  });
+  return out;
+}
+
+function getFetchOptionText(optionsArg) {
+  if (!optionsArg) return null;
+  if (!ts.isObjectLiteralExpression(optionsArg)) return optionsArg.getText();
+  for (const prop of optionsArg.properties) {
+    if (!ts.isPropertyAssignment(prop)) continue;
+    const name = prop.name && ts.isIdentifier(prop.name) ? prop.name.text : null;
+    if (name === 'fetch') return prop.initializer.getText();
+  }
+  return null;
+}
+
+function checkFile(filePath, clientClassMap, premiumPaths) {
+  const src = readFileSync(filePath, 'utf8');
+  const ast = ts.createSourceFile(filePath, src, ts.ScriptTarget.Latest, true);
+
+  const instances = [];
+
+  function recordInstance(varName, newExpr, posNode) {
+    const className = newExpr.expression.getText();
+    if (!clientClassMap.has(className)) return;
+    const optionsArg = newExpr.arguments?.[1] ?? null;
+    const lc = ast.getLineAndCharacterOfPosition(posNode.getStart());
+    instances.push({
+      varName,
+      className,
+      optionsArg,
+      line: lc.line + 1,
+      column: lc.character + 1,
+    });
+  }
+
+  function visit(node) {
+    if (
+      ts.isVariableDeclaration(node) &&
+      node.initializer &&
+      ts.isNewExpression(node.initializer) &&
+      ts.isIdentifier(node.name)
+    ) {
+      recordInstance(node.name.text, node.initializer, node);
+    } else if (
+      ts.isBinaryExpression(node) &&
+      node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+      ts.isNewExpression(node.right)
+    ) {
+      const lhs = node.left.getText();
+      recordInstance(lhs, node.right, node);
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(ast);
+
+  if (instances.length === 0) return [];
+
+  const violations = [];
+  for (const inst of instances) {
+    const methods = clientClassMap.get(inst.className);
+    const calledMethods = new Set();
+
+    function findCalls(node) {
+      if (
+        ts.isCallExpression(node) &&
+        ts.isPropertyAccessExpression(node.expression)
+      ) {
+        const objText = node.expression.expression.getText();
+        const methodName = node.expression.name.text;
+        if (objText === inst.varName) calledMethods.add(methodName);
+      }
+      ts.forEachChild(node, findCalls);
+    }
+    findCalls(ast);
+
+    const premiumCalls = [...calledMethods].filter((m) => {
+      const path = methods.get(m);
+      return path && premiumPaths.has(path);
+    });
+    if (premiumCalls.length === 0) continue;
+
+    const fetchText = getFetchOptionText(inst.optionsArg);
+    if (fetchText === 'premiumFetch') continue;
+
+    violations.push({
+      file: filePath,
+      line: inst.line,
+      column: inst.column,
+      varName: inst.varName,
+      className: inst.className,
+      fetchText: fetchText ?? '<no fetch option — defaults to globalThis.fetch>',
+      premiumCalls,
+    });
+  }
+  return violations;
+}
+
+function main() {
+  const premiumPaths = loadPremiumPaths();
+  const clientClassMap = loadClientClassMap();
+  const files = collectSourceFiles();
+
+  const violations = [];
+  for (const f of files) {
+    violations.push(...checkFile(f, clientClassMap, premiumPaths));
+  }
+
+  if (violations.length > 0) {
+    console.error(
+      `\u2717 ${violations.length} ServiceClient instantiation(s) call PREMIUM_RPC_PATHS methods without { fetch: premiumFetch }:\n`,
+    );
+    for (const v of violations) {
+      const rel = relative(ROOT, v.file);
+      console.error(`  ${rel}:${v.line}:${v.column}`);
+      console.error(`    new ${v.className}(...) bound to \`${v.varName}\``);
+      console.error(`    fetch option: ${v.fetchText}`);
+      console.error(`    premium method(s) called: ${v.premiumCalls.join(', ')}`);
+      console.error('');
+    }
+    console.error('Each ServiceClient that calls a method whose path is in');
+    console.error('src/shared/premium-paths.ts PREMIUM_RPC_PATHS must be constructed with');
+    console.error('  { fetch: premiumFetch }');
+    console.error('imported from @/services/premium-fetch.\n');
+    console.error('Why: globalThis.fetch sends no auth header, so signed-in browser pros');
+    console.error('without a WORLDMONITOR_API_KEY get a 401 the generated client swallows');
+    console.error('into the empty fallback. premiumFetch injects WM key / Clerk bearer when');
+    console.error('available and no-ops safely otherwise — safe to use even on a client whose');
+    console.error('other methods target public paths (see src/services/supply-chain/index.ts).\n');
+    console.error('If a single class needs both gated and ungated calls, split into two');
+    console.error('instances — one with premiumFetch (used for premium methods) and one with');
+    console.error('globalThis.fetch (used for public methods only). See src/services/trade/');
+    console.error('index.ts for the publicClient + premiumClient pattern.\n');
+    console.error('Reference: HIGH(new) #1 in #3242 review — SupplyChainServiceClient was');
+    console.error('constructed with globalThis.fetch and pro users saw silent empty country-');
+    console.error('products + multi-sector-cost-shock panels until commit 01518c3c.');
+    process.exit(1);
+  }
+
+  console.log(
+    `\u2713 premium-fetch parity clean: ${clientClassMap.size} ServiceClient classes scanned, ${premiumPaths.size} premium paths checked, ${files.length} src/ files analyzed.`,
+  );
+}
+
+main();
