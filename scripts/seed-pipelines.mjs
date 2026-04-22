@@ -1,0 +1,169 @@
+#!/usr/bin/env node
+// @ts-check
+//
+// Seeds the oil & gas pipeline registries used by the Energy Atlas.
+// Data is hand-curated in scripts/data/pipelines-{gas,oil}.json.
+// Schema + evidence model documented in docs/methodology/pipelines.mdx.
+//
+// Public badge is DERIVED server-side from the evidence bundle. We publish
+// the raw evidence here; the derivation lives in the supply-chain handler
+// (upcoming). See §4 of the Global Energy Flow parity plan for why we do
+// not publish bare conclusion labels.
+
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { loadEnvFile, runSeed } from './_seed-utils.mjs';
+
+loadEnvFile(import.meta.url);
+
+export const GAS_CANONICAL_KEY = 'energy:pipelines:gas:v1';
+export const OIL_CANONICAL_KEY = 'energy:pipelines:oil:v1';
+// Per §13.2 of the parity plan: registry fields (geometry/operator/capacity)
+// target freshness = 35 days. TTL is 3× interval = weekly refresh.
+// Cron interval is 7 days; TTL=21d means a missed cycle still leaves data
+// readable. Registry is near-static; badge derivation happens at read time.
+export const PIPELINES_TTL_SECONDS = 21 * 24 * 3600;
+
+const VALID_PHYSICAL_STATES = new Set(['flowing', 'reduced', 'offline', 'unknown']);
+const VALID_COMMERCIAL_STATES = new Set(['under_contract', 'expired', 'suspended', 'unknown']);
+const VALID_SOURCES = new Set(['operator', 'regulator', 'press', 'satellite', 'ais-relay']);
+
+// Minimum viable registry size. Expansion to ~75 each happens in the follow-up
+// GEM import PR; this seeder doesn't care about exact counts beyond the floor.
+const MIN_PIPELINES_PER_REGISTRY = 8;
+
+function loadRegistry(filename) {
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  const raw = readFileSync(resolve(__dirname, 'data', filename), 'utf-8');
+  return JSON.parse(raw);
+}
+
+/**
+ * @param {unknown} data
+ * @returns {boolean}
+ */
+export function validateRegistry(data) {
+  if (!data || typeof data !== 'object') return false;
+  const obj = /** @type {Record<string, unknown>} */ (data);
+  if (!obj.pipelines || typeof obj.pipelines !== 'object') return false;
+  const pipelines = /** @type {Record<string, any>} */ (obj.pipelines);
+  const entries = Object.entries(pipelines);
+  if (entries.length < MIN_PIPELINES_PER_REGISTRY) return false;
+
+  const seenIds = new Set();
+  for (const [key, p] of entries) {
+    if (seenIds.has(key)) return false;
+    seenIds.add(key);
+    if (p.id !== key) return false;
+    if (typeof p.name !== 'string' || p.name.length === 0) return false;
+    if (typeof p.operator !== 'string') return false;
+    if (p.commodityType !== 'oil' && p.commodityType !== 'gas') return false;
+    if (typeof p.fromCountry !== 'string' || !/^[A-Z]{2}$/.test(p.fromCountry)) return false;
+    if (typeof p.toCountry !== 'string' || !/^[A-Z]{2}$/.test(p.toCountry)) return false;
+    if (!Array.isArray(p.transitCountries)) return false;
+    for (const t of p.transitCountries) {
+      if (typeof t !== 'string' || !/^[A-Z]{2}$/.test(t)) return false;
+    }
+    const hasCapacity =
+      (p.commodityType === 'gas' && typeof p.capacityBcmYr === 'number' && p.capacityBcmYr > 0) ||
+      (p.commodityType === 'oil' && typeof p.capacityMbd === 'number' && p.capacityMbd > 0);
+    if (!hasCapacity) return false;
+
+    if (!p.startPoint || typeof p.startPoint.lat !== 'number' || typeof p.startPoint.lon !== 'number') return false;
+    if (!p.endPoint || typeof p.endPoint.lat !== 'number' || typeof p.endPoint.lon !== 'number') return false;
+    if (!isValidLatLon(p.startPoint.lat, p.startPoint.lon)) return false;
+    if (!isValidLatLon(p.endPoint.lat, p.endPoint.lon)) return false;
+
+    if (!p.evidence || typeof p.evidence !== 'object') return false;
+    const ev = p.evidence;
+    if (!VALID_PHYSICAL_STATES.has(ev.physicalState)) return false;
+    if (!VALID_SOURCES.has(ev.physicalStateSource)) return false;
+    if (!VALID_COMMERCIAL_STATES.has(ev.commercialState)) return false;
+    if (!Array.isArray(ev.sanctionRefs)) return false;
+    if (typeof ev.lastEvidenceUpdate !== 'string') return false;
+    if (typeof ev.classifierVersion !== 'string') return false;
+    if (typeof ev.classifierConfidence !== 'number' ||
+        ev.classifierConfidence < 0 || ev.classifierConfidence > 1) return false;
+
+    // Every non-`flowing` badge requires at least one evidence field with signal.
+    // This prevents shipping an `offline` label with zero supporting evidence.
+    if (ev.physicalState !== 'flowing') {
+      const hasEvidence =
+        ev.operatorStatement != null ||
+        ev.sanctionRefs.length > 0 ||
+        ev.physicalStateSource === 'ais-relay' ||
+        ev.physicalStateSource === 'satellite' ||
+        ev.physicalStateSource === 'press';
+      if (!hasEvidence) return false;
+    }
+  }
+  return true;
+}
+
+function isValidLatLon(lat, lon) {
+  return Number.isFinite(lat) && Number.isFinite(lon) &&
+         lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
+}
+
+export function buildGasPayload() {
+  const registry = loadRegistry('pipelines-gas.json');
+  return { ...registry, updatedAt: new Date().toISOString() };
+}
+
+export function buildOilPayload() {
+  const registry = loadRegistry('pipelines-oil.json');
+  return { ...registry, updatedAt: new Date().toISOString() };
+}
+
+/**
+ * @param {any} data
+ * @returns {number}
+ */
+export function recordCount(data) {
+  return Object.keys(data?.pipelines ?? {}).length;
+}
+
+/**
+ * @param {any} data
+ * @returns {number}
+ */
+export function declareRecords(data) {
+  return recordCount(data);
+}
+
+// maxStaleMin per health-maxstalemin-write-cadence skill: registry cron runs
+// weekly (7 days = 10_080 min). 2× cadence = 20_160 min. Registry fields are
+// slow-moving so a 2× headroom is sufficient.
+const MAX_STALE_MIN = 20_160;
+
+const isMain = process.argv[1]?.endsWith('seed-pipelines.mjs');
+
+if (isMain) {
+  // Gas + oil published as two separate keys but in a single seeder run. Both
+  // datasets are tiny (<20 KB), and having them co-located guarantees
+  // classifierVersion consistency across both registries.
+  const runGas = runSeed('energy', 'pipelines-gas', GAS_CANONICAL_KEY, buildGasPayload, {
+    validateFn: validateRegistry,
+    ttlSeconds: PIPELINES_TTL_SECONDS,
+    sourceVersion: 'pipelines-gas-registry-v1',
+    recordCount,
+    declareRecords,
+    schemaVersion: 1,
+    maxStaleMin: MAX_STALE_MIN,
+  });
+  const runOil = runSeed('energy', 'pipelines-oil', OIL_CANONICAL_KEY, buildOilPayload, {
+    validateFn: validateRegistry,
+    ttlSeconds: PIPELINES_TTL_SECONDS,
+    sourceVersion: 'pipelines-oil-registry-v1',
+    recordCount,
+    declareRecords,
+    schemaVersion: 1,
+    maxStaleMin: MAX_STALE_MIN,
+  });
+  await Promise.all([runGas, runOil]).catch((err) => {
+    const cause = err.cause ? ` (cause: ${err.cause.message || err.cause.code || err.cause})` : '';
+    console.error('FATAL:', (err.message || err) + cause);
+    process.exit(1);
+  });
+}

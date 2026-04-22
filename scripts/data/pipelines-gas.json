@@ -1,0 +1,315 @@
+{
+  "source": "Curated from operator disclosures, regulator filings, ENTSOG, GEM (CC-BY 4.0)",
+  "methodologyUrl": "/docs/methodology/pipelines",
+  "version": "v1",
+  "referenceYear": 2026,
+  "classifierVersion": "v1",
+  "pipelines": {
+    "nord-stream-1": {
+      "id": "nord-stream-1",
+      "name": "Nord Stream 1",
+      "operator": "Nord Stream AG",
+      "commodityType": "gas",
+      "fromCountry": "RU",
+      "toCountry": "DE",
+      "transitCountries": [],
+      "capacityBcmYr": 55,
+      "lengthKm": 1224,
+      "inService": 2011,
+      "startPoint": { "lat": 60.08, "lon": 29.05 },
+      "endPoint": { "lat": 54.14, "lon": 13.66 },
+      "evidence": {
+        "physicalState": "offline",
+        "physicalStateSource": "operator",
+        "operatorStatement": {
+          "text": "Pipelines damaged by underwater explosions in Swedish/Danish EEZ (Sep 2022); operator filed for insolvency.",
+          "url": "https://www.nordstream.com/press-info/",
+          "date": "2022-09-26"
+        },
+        "commercialState": "suspended",
+        "sanctionRefs": [
+          { "authority": "EU", "listId": "2022/1269 (energy sanctions package 8)", "date": "2022-10-06", "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32022R1269" }
+        ],
+        "lastEvidenceUpdate": "2026-04-22T00:00:00Z",
+        "classifierVersion": "v1",
+        "classifierConfidence": 0.98
+      }
+    },
+    "nord-stream-2": {
+      "id": "nord-stream-2",
+      "name": "Nord Stream 2",
+      "operator": "Nord Stream 2 AG",
+      "commodityType": "gas",
+      "fromCountry": "RU",
+      "toCountry": "DE",
+      "transitCountries": [],
+      "capacityBcmYr": 55,
+      "lengthKm": 1234,
+      "inService": null,
+      "startPoint": { "lat": 60.08, "lon": 29.05 },
+      "endPoint": { "lat": 54.14, "lon": 13.66 },
+      "evidence": {
+        "physicalState": "offline",
+        "physicalStateSource": "operator",
+        "operatorStatement": {
+          "text": "One of two lines damaged in Sep 2022 sabotage; commissioning halted by Germany in Feb 2022.",
+          "url": "https://www.bundesregierung.de/breg-en/news/baerbock-ukraine-russia-nordstream2-2005934",
+          "date": "2022-02-22"
+        },
+        "commercialState": "suspended",
+        "sanctionRefs": [
+          { "authority": "US", "listId": "OFAC (PEESA)", "date": "2022-02-23", "url": "https://home.treasury.gov/news/press-releases/jy0602" }
+        ],
+        "lastEvidenceUpdate": "2026-04-22T00:00:00Z",
+        "classifierVersion": "v1",
+        "classifierConfidence": 0.95
+      }
+    },
+    "turkstream": {
+      "id": "turkstream",
+      "name": "TurkStream",
+      "operator": "South Stream Transport B.V. (Gazprom)",
+      "commodityType": "gas",
+      "fromCountry": "RU",
+      "toCountry": "TR",
+      "transitCountries": [],
+      "capacityBcmYr": 31.5,
+      "lengthKm": 930,
+      "inService": 2020,
+      "startPoint": { "lat": 44.95, "lon": 37.32 },
+      "endPoint": { "lat": 41.89, "lon": 28.02 },
+      "evidence": {
+        "physicalState": "flowing",
+        "physicalStateSource": "operator",
+        "operatorStatement": null,
+        "commercialState": "under_contract",
+        "sanctionRefs": [],
+        "lastEvidenceUpdate": "2026-04-22T00:00:00Z",
+        "classifierVersion": "v1",
+        "classifierConfidence": 0.85
+      }
+    },
+    "yamal-europe": {
+      "id": "yamal-europe",
+      "name": "Yamal–Europe Pipeline",
+      "operator": "Gazprom / EuRoPol GAZ / WinGas",
+      "commodityType": "gas",
+      "fromCountry": "RU",
+      "toCountry": "DE",
+      "transitCountries": ["BY", "PL"],
+      "capacityBcmYr": 33,
+      "lengthKm": 4107,
+      "inService": 1999,
+      "startPoint": { "lat": 66.52, "lon": 66.60 },
+      "endPoint": { "lat": 52.27, "lon": 14.64 },
+      "evidence": {
+        "physicalState": "offline",
+        "physicalStateSource": "press",
+        "operatorStatement": null,
+        "commercialState": "expired",
+        "sanctionRefs": [
+          { "authority": "Poland", "listId": "Retaliatory counter-sanctions on EuRoPol GAZ", "date": "2022-04-26", "url": "https://www.gov.pl/web/aktywa-panstwowe/" }
+        ],
+        "lastEvidenceUpdate": "2026-04-22T00:00:00Z",
+        "classifierVersion": "v1",
+        "classifierConfidence": 0.9
+      }
+    },
+    "brotherhood-soyuz": {
+      "id": "brotherhood-soyuz",
+      "name": "Brotherhood & Soyuz (Transit via Ukraine)",
+      "operator": "Gazprom / Naftogaz",
+      "commodityType": "gas",
+      "fromCountry": "RU",
+      "toCountry": "SK",
+      "transitCountries": ["UA"],
+      "capacityBcmYr": 142,
+      "lengthKm": 4451,
+      "inService": 1983,
+      "startPoint": { "lat": 58.00, "lon": 56.00 },
+      "endPoint": { "lat": 48.60, "lon": 22.14 },
+      "evidence": {
+        "physicalState": "offline",
+        "physicalStateSource": "operator",
+        "operatorStatement": {
+          "text": "Ukraine transit contract expired 2024-12-31; Naftogaz did not renew.",
+          "url": "https://www.naftogaz.com/en/news",
+          "date": "2025-01-01"
+        },
+        "commercialState": "expired",
+        "sanctionRefs": [],
+        "lastEvidenceUpdate": "2026-04-22T00:00:00Z",
+        "classifierVersion": "v1",
+        "classifierConfidence": 0.92
+      }
+    },
+    "power-of-siberia": {
+      "id": "power-of-siberia",
+      "name": "Power of Siberia",
+      "operator": "Gazprom / CNPC",
+      "commodityType": "gas",
+      "fromCountry": "RU",
+      "toCountry": "CN",
+      "transitCountries": [],
+      "capacityBcmYr": 38,
+      "lengthKm": 3000,
+      "inService": 2019,
+      "startPoint": { "lat": 62.45, "lon": 129.73 },
+      "endPoint": { "lat": 49.58, "lon": 127.52 },
+      "evidence": {
+        "physicalState": "flowing",
+        "physicalStateSource": "operator",
+        "operatorStatement": null,
+        "commercialState": "under_contract",
+        "sanctionRefs": [],
+        "lastEvidenceUpdate": "2026-04-22T00:00:00Z",
+        "classifierVersion": "v1",
+        "classifierConfidence": 0.9
+      }
+    },
+    "dolphin": {
+      "id": "dolphin",
+      "name": "Dolphin Gas Pipeline",
+      "operator": "Dolphin Energy Ltd",
+      "commodityType": "gas",
+      "fromCountry": "QA",
+      "toCountry": "AE",
+      "transitCountries": [],
+      "capacityBcmYr": 20.4,
+      "lengthKm": 364,
+      "inService": 2007,
+      "startPoint": { "lat": 25.90, "lon": 51.50 },
+      "endPoint": { "lat": 24.47, "lon": 54.37 },
+      "evidence": {
+        "physicalState": "flowing",
+        "physicalStateSource": "operator",
+        "operatorStatement": null,
+        "commercialState": "under_contract",
+        "sanctionRefs": [],
+        "lastEvidenceUpdate": "2026-04-22T00:00:00Z",
+        "classifierVersion": "v1",
+        "classifierConfidence": 0.92
+      }
+    },
+    "medgaz": {
+      "id": "medgaz",
+      "name": "Medgaz",
+      "operator": "Medgaz S.A. (Sonatrach / Naturgy)",
+      "commodityType": "gas",
+      "fromCountry": "DZ",
+      "toCountry": "ES",
+      "transitCountries": [],
+      "capacityBcmYr": 10.5,
+      "lengthKm": 757,
+      "inService": 2011,
+      "startPoint": { "lat": 35.67, "lon": -0.64 },
+      "endPoint": { "lat": 36.73, "lon": -2.59 },
+      "evidence": {
+        "physicalState": "flowing",
+        "physicalStateSource": "operator",
+        "operatorStatement": null,
+        "commercialState": "under_contract",
+        "sanctionRefs": [],
+        "lastEvidenceUpdate": "2026-04-22T00:00:00Z",
+        "classifierVersion": "v1",
+        "classifierConfidence": 0.9
+      }
+    },
+    "tap": {
+      "id": "tap",
+      "name": "Trans-Adriatic Pipeline (TAP)",
+      "operator": "TAP AG",
+      "commodityType": "gas",
+      "fromCountry": "TR",
+      "toCountry": "IT",
+      "transitCountries": ["GR", "AL"],
+      "capacityBcmYr": 10,
+      "lengthKm": 878,
+      "inService": 2020,
+      "startPoint": { "lat": 40.91, "lon": 26.27 },
+      "endPoint": { "lat": 40.53, "lon": 17.85 },
+      "evidence": {
+        "physicalState": "flowing",
+        "physicalStateSource": "operator",
+        "operatorStatement": null,
+        "commercialState": "under_contract",
+        "sanctionRefs": [],
+        "lastEvidenceUpdate": "2026-04-22T00:00:00Z",
+        "classifierVersion": "v1",
+        "classifierConfidence": 0.92
+      }
+    },
+    "tanap": {
+      "id": "tanap",
+      "name": "Trans-Anatolian Pipeline (TANAP)",
+      "operator": "TANAP Doğalgaz İletim A.Ş.",
+      "commodityType": "gas",
+      "fromCountry": "AZ",
+      "toCountry": "TR",
+      "transitCountries": ["GE"],
+      "capacityBcmYr": 16,
+      "lengthKm": 1850,
+      "inService": 2018,
+      "startPoint": { "lat": 41.17, "lon": 42.85 },
+      "endPoint": { "lat": 40.91, "lon": 26.27 },
+      "evidence": {
+        "physicalState": "flowing",
+        "physicalStateSource": "operator",
+        "operatorStatement": null,
+        "commercialState": "under_contract",
+        "sanctionRefs": [],
+        "lastEvidenceUpdate": "2026-04-22T00:00:00Z",
+        "classifierVersion": "v1",
+        "classifierConfidence": 0.9
+      }
+    },
+    "central-asia-china": {
+      "id": "central-asia-china",
+      "name": "Central Asia–China Gas Pipeline",
+      "operator": "CNPC / Turkmengaz / KazTransGas",
+      "commodityType": "gas",
+      "fromCountry": "TM",
+      "toCountry": "CN",
+      "transitCountries": ["UZ", "KZ"],
+      "capacityBcmYr": 55,
+      "lengthKm": 1833,
+      "inService": 2009,
+      "startPoint": { "lat": 40.00, "lon": 62.50 },
+      "endPoint": { "lat": 42.88, "lon": 80.20 },
+      "evidence": {
+        "physicalState": "flowing",
+        "physicalStateSource": "operator",
+        "operatorStatement": null,
+        "commercialState": "under_contract",
+        "sanctionRefs": [],
+        "lastEvidenceUpdate": "2026-04-22T00:00:00Z",
+        "classifierVersion": "v1",
+        "classifierConfidence": 0.88
+      }
+    },
+    "langeled": {
+      "id": "langeled",
+      "name": "Langeled",
+      "operator": "Gassco",
+      "commodityType": "gas",
+      "fromCountry": "NO",
+      "toCountry": "GB",
+      "transitCountries": [],
+      "capacityBcmYr": 25.5,
+      "lengthKm": 1166,
+      "inService": 2006,
+      "startPoint": { "lat": 64.82, "lon": 6.70 },
+      "endPoint": { "lat": 53.71, "lon": -0.31 },
+      "evidence": {
+        "physicalState": "flowing",
+        "physicalStateSource": "operator",
+        "operatorStatement": null,
+        "commercialState": "under_contract",
+        "sanctionRefs": [],
+        "lastEvidenceUpdate": "2026-04-22T00:00:00Z",
+        "classifierVersion": "v1",
+        "classifierConfidence": 0.95
+      }
+    }
+  }
+}

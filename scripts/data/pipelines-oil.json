@@ -1,0 +1,327 @@
+{
+  "source": "Curated from operator disclosures, regulator filings, GEM (CC-BY 4.0)",
+  "methodologyUrl": "/docs/methodology/pipelines",
+  "version": "v1",
+  "referenceYear": 2026,
+  "classifierVersion": "v1",
+  "pipelines": {
+    "druzhba-north": {
+      "id": "druzhba-north",
+      "name": "Druzhba Pipeline (Northern Branch)",
+      "operator": "Transneft / PERN / MERO",
+      "commodityType": "oil",
+      "productClass": "crude",
+      "fromCountry": "RU",
+      "toCountry": "DE",
+      "transitCountries": ["BY", "PL"],
+      "capacityMbd": 1.0,
+      "lengthKm": 4000,
+      "inService": 1964,
+      "startPoint": { "lat": 52.60, "lon": 49.40 },
+      "endPoint": { "lat": 52.32, "lon": 14.06 },
+      "evidence": {
+        "physicalState": "offline",
+        "physicalStateSource": "operator",
+        "operatorStatement": {
+          "text": "Germany ended Druzhba imports Jan 2023; PCK Schwedt now sourced via Rostock/Gdansk.",
+          "url": "https://www.bundesregierung.de/breg-en/news",
+          "date": "2023-01-01"
+        },
+        "commercialState": "suspended",
+        "sanctionRefs": [
+          { "authority": "EU", "listId": "Regulation 2022/879 (Russian crude embargo)", "date": "2022-06-03", "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32022R0879" }
+        ],
+        "lastEvidenceUpdate": "2026-04-22T00:00:00Z",
+        "classifierVersion": "v1",
+        "classifierConfidence": 0.92
+      }
+    },
+    "druzhba-south": {
+      "id": "druzhba-south",
+      "name": "Druzhba Pipeline (Southern Branch)",
+      "operator": "Transneft / MOL / Slovnaft",
+      "commodityType": "oil",
+      "productClass": "crude",
+      "fromCountry": "RU",
+      "toCountry": "HU",
+      "transitCountries": ["BY", "UA", "SK"],
+      "capacityMbd": 0.6,
+      "lengthKm": 2400,
+      "inService": 1964,
+      "startPoint": { "lat": 52.60, "lon": 49.40 },
+      "endPoint": { "lat": 47.50, "lon": 19.04 },
+      "evidence": {
+        "physicalState": "reduced",
+        "physicalStateSource": "press",
+        "operatorStatement": null,
+        "commercialState": "under_contract",
+        "sanctionRefs": [
+          { "authority": "EU", "listId": "Regulation 2022/879 (derogation for landlocked HU/SK/CZ)", "date": "2022-06-03", "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32022R0879" }
+        ],
+        "lastEvidenceUpdate": "2026-04-22T00:00:00Z",
+        "classifierVersion": "v1",
+        "classifierConfidence": 0.82
+      }
+    },
+    "cpc": {
+      "id": "cpc",
+      "name": "Caspian Pipeline Consortium (CPC)",
+      "operator": "Caspian Pipeline Consortium",
+      "commodityType": "oil",
+      "productClass": "crude",
+      "fromCountry": "KZ",
+      "toCountry": "RU",
+      "transitCountries": [],
+      "capacityMbd": 1.4,
+      "lengthKm": 1511,
+      "inService": 2001,
+      "startPoint": { "lat": 46.32, "lon": 53.40 },
+      "endPoint": { "lat": 44.72, "lon": 37.77 },
+      "evidence": {
+        "physicalState": "flowing",
+        "physicalStateSource": "operator",
+        "operatorStatement": null,
+        "commercialState": "under_contract",
+        "sanctionRefs": [],
+        "lastEvidenceUpdate": "2026-04-22T00:00:00Z",
+        "classifierVersion": "v1",
+        "classifierConfidence": 0.8
+      }
+    },
+    "espo": {
+      "id": "espo",
+      "name": "Eastern Siberia–Pacific Ocean Pipeline (ESPO)",
+      "operator": "Transneft",
+      "commodityType": "oil",
+      "productClass": "crude",
+      "fromCountry": "RU",
+      "toCountry": "RU",
+      "transitCountries": [],
+      "capacityMbd": 1.6,
+      "lengthKm": 4857,
+      "inService": 2009,
+      "startPoint": { "lat": 56.15, "lon": 101.88 },
+      "endPoint": { "lat": 42.66, "lon": 133.05 },
+      "evidence": {
+        "physicalState": "flowing",
+        "physicalStateSource": "operator",
+        "operatorStatement": null,
+        "commercialState": "under_contract",
+        "sanctionRefs": [
+          { "authority": "G7+EU", "listId": "Russian crude price cap ($60/bbl; $47.60 from 2026-02)", "date": "2022-12-05", "url": "https://home.treasury.gov/news/press-releases/jy1161" }
+        ],
+        "lastEvidenceUpdate": "2026-04-22T00:00:00Z",
+        "classifierVersion": "v1",
+        "classifierConfidence": 0.85
+      }
+    },
+    "btc": {
+      "id": "btc",
+      "name": "Baku–Tbilisi–Ceyhan (BTC)",
+      "operator": "BTC Co. (BP operated)",
+      "commodityType": "oil",
+      "productClass": "crude",
+      "fromCountry": "AZ",
+      "toCountry": "TR",
+      "transitCountries": ["GE"],
+      "capacityMbd": 1.2,
+      "lengthKm": 1768,
+      "inService": 2006,
+      "startPoint": { "lat": 40.38, "lon": 49.87 },
+      "endPoint": { "lat": 36.87, "lon": 35.93 },
+      "evidence": {
+        "physicalState": "flowing",
+        "physicalStateSource": "operator",
+        "operatorStatement": null,
+        "commercialState": "under_contract",
+        "sanctionRefs": [],
+        "lastEvidenceUpdate": "2026-04-22T00:00:00Z",
+        "classifierVersion": "v1",
+        "classifierConfidence": 0.9
+      }
+    },
+    "taps": {
+      "id": "taps",
+      "name": "Trans-Alaska Pipeline (TAPS)",
+      "operator": "Alyeska Pipeline Service Co.",
+      "commodityType": "oil",
+      "productClass": "crude",
+      "fromCountry": "US",
+      "toCountry": "US",
+      "transitCountries": [],
+      "capacityMbd": 2.1,
+      "lengthKm": 1287,
+      "inService": 1977,
+      "startPoint": { "lat": 70.25, "lon": -148.34 },
+      "endPoint": { "lat": 61.13, "lon": -146.35 },
+      "evidence": {
+        "physicalState": "flowing",
+        "physicalStateSource": "operator",
+        "operatorStatement": null,
+        "commercialState": "under_contract",
+        "sanctionRefs": [],
+        "lastEvidenceUpdate": "2026-04-22T00:00:00Z",
+        "classifierVersion": "v1",
+        "classifierConfidence": 0.95
+      }
+    },
+    "habshan-fujairah": {
+      "id": "habshan-fujairah",
+      "name": "Abu Dhabi Crude Oil Pipeline (Habshan–Fujairah)",
+      "operator": "IPIC / ADNOC",
+      "commodityType": "oil",
+      "productClass": "crude",
+      "fromCountry": "AE",
+      "toCountry": "AE",
+      "transitCountries": [],
+      "capacityMbd": 1.5,
+      "lengthKm": 360,
+      "inService": 2012,
+      "startPoint": { "lat": 23.75, "lon": 53.72 },
+      "endPoint": { "lat": 25.12, "lon": 56.36 },
+      "note": "Strategic Hormuz bypass — rerouted volume during Hormuz disruptions.",
+      "evidence": {
+        "physicalState": "flowing",
+        "physicalStateSource": "operator",
+        "operatorStatement": null,
+        "commercialState": "under_contract",
+        "sanctionRefs": [],
+        "lastEvidenceUpdate": "2026-04-22T00:00:00Z",
+        "classifierVersion": "v1",
+        "classifierConfidence": 0.92
+      }
+    },
+    "keystone": {
+      "id": "keystone",
+      "name": "Keystone Pipeline System (Phase 1-3)",
+      "operator": "TC Energy",
+      "commodityType": "oil",
+      "productClass": "crude",
+      "fromCountry": "CA",
+      "toCountry": "US",
+      "transitCountries": [],
+      "capacityMbd": 0.59,
+      "lengthKm": 4324,
+      "inService": 2010,
+      "startPoint": { "lat": 53.66, "lon": -113.62 },
+      "endPoint": { "lat": 29.38, "lon": -94.90 },
+      "evidence": {
+        "physicalState": "flowing",
+        "physicalStateSource": "operator",
+        "operatorStatement": null,
+        "commercialState": "under_contract",
+        "sanctionRefs": [],
+        "lastEvidenceUpdate": "2026-04-22T00:00:00Z",
+        "classifierVersion": "v1",
+        "classifierConfidence": 0.93
+      }
+    },
+    "kirkuk-ceyhan": {
+      "id": "kirkuk-ceyhan",
+      "name": "Kirkuk–Ceyhan Pipeline",
+      "operator": "BOTAS / North Oil Company / Iraqi State Oil Marketing Organization",
+      "commodityType": "oil",
+      "productClass": "crude",
+      "fromCountry": "IQ",
+      "toCountry": "TR",
+      "transitCountries": [],
+      "capacityMbd": 1.6,
+      "lengthKm": 970,
+      "inService": 1977,
+      "startPoint": { "lat": 35.47, "lon": 44.39 },
+      "endPoint": { "lat": 36.87, "lon": 35.93 },
+      "evidence": {
+        "physicalState": "offline",
+        "physicalStateSource": "press",
+        "operatorStatement": null,
+        "commercialState": "suspended",
+        "sanctionRefs": [],
+        "note": "Flow halted in Mar 2023 following ICC arbitration ruling; intermittent resumption since.",
+        "lastEvidenceUpdate": "2026-04-22T00:00:00Z",
+        "classifierVersion": "v1",
+        "classifierConfidence": 0.78
+      }
+    },
+    "baku-supsa": {
+      "id": "baku-supsa",
+      "name": "Baku–Supsa (Western Route Export) Pipeline",
+      "operator": "BP / AIOC",
+      "commodityType": "oil",
+      "productClass": "crude",
+      "fromCountry": "AZ",
+      "toCountry": "GE",
+      "transitCountries": [],
+      "capacityMbd": 0.145,
+      "lengthKm": 833,
+      "inService": 1999,
+      "startPoint": { "lat": 40.38, "lon": 49.87 },
+      "endPoint": { "lat": 41.95, "lon": 41.75 },
+      "evidence": {
+        "physicalState": "flowing",
+        "physicalStateSource": "operator",
+        "operatorStatement": null,
+        "commercialState": "under_contract",
+        "sanctionRefs": [],
+        "lastEvidenceUpdate": "2026-04-22T00:00:00Z",
+        "classifierVersion": "v1",
+        "classifierConfidence": 0.85
+      }
+    },
+    "trans-mountain": {
+      "id": "trans-mountain",
+      "name": "Trans Mountain Pipeline (incl. TMX expansion)",
+      "operator": "Trans Mountain Corporation (Government of Canada)",
+      "commodityType": "oil",
+      "productClass": "crude",
+      "fromCountry": "CA",
+      "toCountry": "CA",
+      "transitCountries": [],
+      "capacityMbd": 0.89,
+      "lengthKm": 1150,
+      "inService": 1953,
+      "startPoint": { "lat": 53.55, "lon": -113.49 },
+      "endPoint": { "lat": 49.28, "lon": -122.95 },
+      "evidence": {
+        "physicalState": "flowing",
+        "physicalStateSource": "operator",
+        "operatorStatement": {
+          "text": "TMX expansion commissioned May 2024, tripling capacity to 890 kbpd.",
+          "url": "https://www.transmountain.com/news",
+          "date": "2024-05-01"
+        },
+        "commercialState": "under_contract",
+        "sanctionRefs": [],
+        "lastEvidenceUpdate": "2026-04-22T00:00:00Z",
+        "classifierVersion": "v1",
+        "classifierConfidence": 0.95
+      }
+    },
+    "eastern-siberia-china-oil": {
+      "id": "eastern-siberia-china-oil",
+      "name": "ESPO Spur to Daqing (China Branch)",
+      "operator": "Transneft / CNPC",
+      "commodityType": "oil",
+      "productClass": "crude",
+      "fromCountry": "RU",
+      "toCountry": "CN",
+      "transitCountries": [],
+      "capacityMbd": 0.6,
+      "lengthKm": 1030,
+      "inService": 2011,
+      "startPoint": { "lat": 53.37, "lon": 122.44 },
+      "endPoint": { "lat": 46.80, "lon": 125.02 },
+      "evidence": {
+        "physicalState": "flowing",
+        "physicalStateSource": "operator",
+        "operatorStatement": null,
+        "commercialState": "under_contract",
+        "sanctionRefs": [
+          { "authority": "G7+EU", "listId": "Russian crude price cap", "date": "2022-12-05", "url": "https://home.treasury.gov/news/press-releases/jy1161" }
+        ],
+        "lastEvidenceUpdate": "2026-04-22T00:00:00Z",
+        "classifierVersion": "v1",
+        "classifierConfidence": 0.85
+      }
+    }
+  }
+}
