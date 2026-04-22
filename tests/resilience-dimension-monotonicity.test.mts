@@ -98,12 +98,12 @@ describe('resilience dimension monotonicity — scoreExternalDebtCoverage', () =
   }
 
   it('higher debtToReservesRatio → lower score', async () => {
-    // NOTE: the current scorer saturates at 100 for ratio ≤ 0 (goalpost
-    // lower-better, worst=5 best=0). Picking values inside the 0-5 band
-    // to get a meaningful gradient. PR 3 §3.6 re-goalposts this.
-    const good = await scoreWith(1);
-    const bad = await scoreWith(4);
-    assert.ok(good.score > bad.score, `debtToReservesRatio 1→4 should lower score; got ${good.score} → ${bad.score}`);
+    // PR 3 §3.5 point 3: goalpost is now lower-better worst=2 best=0
+    // (Greenspan-Guidotti anchor). Any ratio ≥ 2 clamps to 0, so pick
+    // values inside the discriminating band to get a meaningful gradient.
+    const good = await scoreWith(0.3);
+    const bad = await scoreWith(1.5);
+    assert.ok(good.score > bad.score, `debtToReservesRatio 0.3→1.5 should lower score; got ${good.score} → ${bad.score}`);
   });
 });
 

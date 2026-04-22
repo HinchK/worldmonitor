@@ -1133,8 +1133,9 @@ describe('resilience source-failure aggregation (T1.7)', () => {
   });
 
   it('scoreExternalDebtCoverage: low debt-to-reserves ratio scores well', async () => {
+    // PR 3 §3.5: goalpost tightened (5→2). NO ratio=0.2 → (2-0.2)/2 = 90.
     const no = await scoreExternalDebtCoverage('NO', fixtureReader);
-    assert.ok(no.score > 90, `NO with ratio 0.2 should score >90, got ${no.score}`);
+    assert.ok(no.score >= 85, `NO with ratio 0.2 should score >=85, got ${no.score}`);
   });
 
   it('scoreImportConcentration: low HHI scores well', async () => {

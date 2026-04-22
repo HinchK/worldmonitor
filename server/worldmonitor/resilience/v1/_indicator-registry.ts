@@ -925,9 +925,16 @@ export const INDICATOR_REGISTRY: IndicatorSpec[] = [
   {
     id: 'recoveryDebtToReserves',
     dimension: 'externalDebtCoverage',
-    description: 'Short-term external debt to reserves ratio (World Bank DT.DOD.DSTC.CD / FI.RES.TOTL.CD); values above 1 signal reserve inadequacy for debt service',
+    description: 'Short-term external debt to reserves ratio (World Bank DT.DOD.DSTC.CD / FI.RES.TOTL.CD); Greenspan-Guidotti rule treats ratio≥1 as reserve inadequacy, ratio≥2 as acute rollover-shock exposure',
     direction: 'lowerBetter',
-    goalposts: { worst: 5, best: 0 },
+    // PR 3 §3.5 point 3: re-goalposted from (0..5) to (0..2). Old goalpost
+    // saturated at 100 across the full 9-country probe including stressed
+    // states. New anchor: ratio=1.0 (Greenspan-Guidotti reserve-adequacy
+    // threshold) maps to score 50; ratio=2.0 (double the threshold, acute
+    // distress) maps to 0. Ratios above 2.0 clamp to 0 — consistent with
+    // "beyond this point the precise value stops mattering, the country
+    // is already in a rollover-crisis regime."
+    goalposts: { worst: 2, best: 0 },
     weight: 1.0,
     sourceKey: 'resilience:recovery:external-debt:v1',
     scope: 'global',

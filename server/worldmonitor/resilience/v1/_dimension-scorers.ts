@@ -1479,8 +1479,12 @@ export async function scoreExternalDebtCoverage(
       freshness: { lastObservedAtMs: 0, staleness: '' },
     };
   }
+  // PR 3 §3.5 point 3: goalpost re-anchored on Greenspan-Guidotti.
+  // Ratio 1.0 (short-term debt matches reserves) = score 50; ratio 2.0
+  // = score 0 (acute rollover-shock exposure). See registry entry
+  // recoveryDebtToReserves for the construct rationale.
   return weightedBlend([
-    { score: normalizeLowerBetter(entry.debtToReservesRatio, 0, 5), weight: 1.0 },
+    { score: normalizeLowerBetter(entry.debtToReservesRatio, 0, 2), weight: 1.0 },
   ]);
 }
 

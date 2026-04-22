@@ -591,9 +591,9 @@
   coveragePct: 0.75
   lastObservedYear: 2023
   license: CC-BY-4.0
-  mechanismTestRationale: Short-term external debt to reserves ratio — rollover-shock exposure.
-  constructStatus: dead-signal
-  reviewNotes: Saturates at 100 for every country in the 9-country probe (goalpost 0-5 is too generous). PR 3 re-goalpost.
+  mechanismTestRationale: Short-term external debt to reserves ratio — rollover-shock exposure. Goalpost anchored on Greenspan-Guidotti (ratio≥1 = reserve inadequacy).
+  constructStatus: observed-mechanism
+  reviewNotes: PR 3 §3.5 point 3 re-goalposted from (0..5) to (0..2). Old goalpost saturated at 100 across the 9-country probe including stressed states; new anchor maps ratio=1.0 to score 50 and ratio=2.0 to score 0.
 
 - indicator: recoveryImportHhi
   dimension: importConcentration
