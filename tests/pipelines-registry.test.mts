@@ -10,7 +10,7 @@ import {
   recordCount,
   GAS_CANONICAL_KEY,
   OIL_CANONICAL_KEY,
-} from '../scripts/seed-pipelines.mjs';
+} from '../scripts/_pipeline-registry.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const gasRaw = readFileSync(resolve(__dirname, '../scripts/data/pipelines-gas.json'), 'utf-8');

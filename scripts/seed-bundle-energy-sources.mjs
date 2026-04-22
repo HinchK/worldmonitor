@@ -16,10 +16,11 @@ await runBundle('energy-sources', [
   // service exists for it, so health has been EMPTY (seedAgeMin: null) since the seeder
   // was added.
   { label: 'SPR-Policies', script: 'seed-spr-policies.mjs', seedMetaKey: 'energy:spr-policies', canonicalKey: 'energy:spr-policies:v1', intervalMs: 7 * DAY, timeoutMs: 60_000 },
-  // Pipeline registries (gas + oil) — a single seed-pipelines.mjs process
-  // publishes BOTH energy:pipelines:gas:v1 and energy:pipelines:oil:v1 via
-  // two runSeed() calls. Listing the oil key here too would double-execute
-  // the script; api/health.js tracks the oil key's staleness separately.
-  // Curated data in scripts/data/pipelines-{gas,oil}.json.
-  { label: 'Pipelines', script: 'seed-pipelines.mjs', seedMetaKey: 'energy:pipelines-gas', canonicalKey: 'energy:pipelines:gas:v1', intervalMs: 7 * DAY, timeoutMs: 90_000 },
+  // Pipeline registries (gas + oil) — two separate scripts because runSeed()
+  // hard-exits its terminal paths (process.exit in _seed-utils at ~9 sites),
+  // so two runSeed() calls in one process would leave the second key
+  // unwritten. Shared helpers live in scripts/_pipeline-registry.mjs; curated
+  // data in scripts/data/pipelines-{gas,oil}.json.
+  { label: 'Pipelines-Gas', script: 'seed-pipelines-gas.mjs', seedMetaKey: 'energy:pipelines-gas', canonicalKey: 'energy:pipelines:gas:v1', intervalMs: 7 * DAY, timeoutMs: 60_000 },
+  { label: 'Pipelines-Oil', script: 'seed-pipelines-oil.mjs', seedMetaKey: 'energy:pipelines-oil', canonicalKey: 'energy:pipelines:oil:v1', intervalMs: 7 * DAY, timeoutMs: 60_000 },
 ]);

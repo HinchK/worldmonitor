@@ -1,7 +1,12 @@
-#!/usr/bin/env node
 // @ts-check
 //
-// Seeds the oil & gas pipeline registries used by the Energy Atlas.
+// Shared utility module for the oil & gas pipeline registries used by the
+// Energy Atlas. NOT an entry point — see seed-pipelines-gas.mjs and
+// seed-pipelines-oil.mjs for the two runSeed invocations. These are split
+// because runSeed() hard-exits the process on its terminal paths (_seed-utils
+// has ~9 process.exit sites), so two runSeed calls in one process would leave
+// the second key unwritten.
+//
 // Data is hand-curated in scripts/data/pipelines-{gas,oil}.json.
 // Schema + evidence model documented in docs/methodology/pipelines.mdx.
 //
@@ -13,9 +18,6 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadEnvFile, runSeed } from './_seed-utils.mjs';
-
-loadEnvFile(import.meta.url);
 
 export const GAS_CANONICAL_KEY = 'energy:pipelines:gas:v1';
 export const OIL_CANONICAL_KEY = 'energy:pipelines:oil:v1';
@@ -135,35 +137,4 @@ export function declareRecords(data) {
 // maxStaleMin per health-maxstalemin-write-cadence skill: registry cron runs
 // weekly (7 days = 10_080 min). 2× cadence = 20_160 min. Registry fields are
 // slow-moving so a 2× headroom is sufficient.
-const MAX_STALE_MIN = 20_160;
-
-const isMain = process.argv[1]?.endsWith('seed-pipelines.mjs');
-
-if (isMain) {
-  // Gas + oil published as two separate keys but in a single seeder run. Both
-  // datasets are tiny (<20 KB), and having them co-located guarantees
-  // classifierVersion consistency across both registries.
-  const runGas = runSeed('energy', 'pipelines-gas', GAS_CANONICAL_KEY, buildGasPayload, {
-    validateFn: validateRegistry,
-    ttlSeconds: PIPELINES_TTL_SECONDS,
-    sourceVersion: 'pipelines-gas-registry-v1',
-    recordCount,
-    declareRecords,
-    schemaVersion: 1,
-    maxStaleMin: MAX_STALE_MIN,
-  });
-  const runOil = runSeed('energy', 'pipelines-oil', OIL_CANONICAL_KEY, buildOilPayload, {
-    validateFn: validateRegistry,
-    ttlSeconds: PIPELINES_TTL_SECONDS,
-    sourceVersion: 'pipelines-oil-registry-v1',
-    recordCount,
-    declareRecords,
-    schemaVersion: 1,
-    maxStaleMin: MAX_STALE_MIN,
-  });
-  await Promise.all([runGas, runOil]).catch((err) => {
-    const cause = err.cause ? ` (cause: ${err.cause.message || err.cause.code || err.cause})` : '';
-    console.error('FATAL:', (err.message || err) + cause);
-    process.exit(1);
-  });
-}
+export const MAX_STALE_MIN = 20_160;
