@@ -147,15 +147,40 @@ function staleToProto(f: StaleFlight): ListMilitaryFlightsResponse['flights'][nu
   };
 }
 
+// Negative cache for the stale Redis read — mirrors the legacy
+// /api/military-flights handler's NEG_TTL=30_000ms. When the live fetch fails
+// AND the stale key is also empty/unparseable, suppress further Redis reads
+// of REDIS_STALE_KEY for STALE_NEG_TTL_MS so we don't hammer Redis once per
+// request during sustained relay+seed outages. Per-isolate (Vercel Edge state),
+// which is fine — each warm isolate gets its own 30s suppression window.
+const STALE_NEG_TTL_MS = 30_000;
+let staleNegUntil = 0;
+
+// Test seam — exposed for unit tests that need to drive the suppression
+// window without sleeping. Not exported from the module's public API.
+export function _resetStaleNegativeCacheForTests(): void {
+  staleNegUntil = 0;
+}
+
 async function fetchStaleFallback(): Promise<ListMilitaryFlightsResponse['flights'] | null> {
+  const now = Date.now();
+  if (now < staleNegUntil) return null;
   try {
     const raw = (await getRawJson(REDIS_STALE_KEY)) as StalePayload | null;
-    if (!raw || !Array.isArray(raw.flights) || raw.flights.length === 0) return null;
+    if (!raw || !Array.isArray(raw.flights) || raw.flights.length === 0) {
+      staleNegUntil = now + STALE_NEG_TTL_MS;
+      return null;
+    }
     const flights = raw.flights
       .map(staleToProto)
       .filter((f): f is NonNullable<typeof f> => f != null);
-    return flights.length > 0 ? flights : null;
+    if (flights.length === 0) {
+      staleNegUntil = now + STALE_NEG_TTL_MS;
+      return null;
+    }
+    return flights;
   } catch {
+    staleNegUntil = now + STALE_NEG_TTL_MS;
     return null;
   }
 }
