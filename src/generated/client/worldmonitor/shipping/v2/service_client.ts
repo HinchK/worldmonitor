@@ -40,7 +40,7 @@ export interface BypassOption {
 export interface RegisterWebhookRequest {
   callbackUrl: string;
   chokepointIds: string[];
-  alertThreshold: number;
+  alertThreshold?: number;
 }
 
 export interface RegisterWebhookResponse {

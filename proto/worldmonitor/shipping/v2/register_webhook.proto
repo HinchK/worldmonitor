@@ -20,7 +20,11 @@ message RegisterWebhookRequest {
   // the entire CHOKEPOINT_REGISTRY. Unknown IDs fail with 400.
   repeated string chokepoint_ids = 2;
   // Disruption-score threshold for delivery, 0-100. Default 50.
-  int32 alert_threshold = 3 [
+  // proto3 `optional` so the handler can distinguish "partner explicitly sent
+  // 0 (deliver every alert)" from "partner omitted the field (apply default
+  // 50)". Without `optional`, both serialise to the proto3 scalar default of
+  // 0 and the handler can't tell them apart — flagged in #3242 review.
+  optional int32 alert_threshold = 3 [
     (buf.validate.field).int32.gte = 0,
     (buf.validate.field).int32.lte = 100
   ];

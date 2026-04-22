@@ -207,16 +207,13 @@ describe('ShippingV2Service handlers', () => {
       );
     });
 
-    it('rejects alertThreshold > 100 with ValidationError', async () => {
-      await assert.rejects(
-        () => registerWebhook(proCtx(), {
-          callbackUrl: 'https://hooks.example.com/wm',
-          chokepointIds: [],
-          alertThreshold: 150,
-        }),
-        (err) => err instanceof ValidationError && err.violations[0].field === 'alertThreshold',
-      );
-    });
+    // alert_threshold 0..100 range is now enforced at the proto/wire layer
+    // by buf.validate (gte/lte on `optional int32 alert_threshold`).
+    // Direct handler invocation bypasses wire validation; the handler no
+    // longer carries a redundant runtime range check (was dead code after
+    // the previous `> 0 ? : 50` coercion). The wire path is exercised by
+    // the sebuf gateway integration; this unit test would only assert
+    // behaviour the handler intentionally delegates upstream.
 
     it('happy path returns wh_-prefixed subscriberId and 64-char hex secret; issues SET + SADD + EXPIRE pipeline with 30-day TTL', async () => {
       const calls = stubRedisOk();
@@ -246,7 +243,22 @@ describe('ShippingV2Service handlers', () => {
       assert.equal(pipeline[2][2], String(86400 * 30));
     });
 
-    it('alertThreshold 0 (proto default) coerces to legacy default 50', async () => {
+    it('alertThreshold omitted (undefined) applies the legacy default of 50', async () => {
+      const calls = stubRedisOk();
+      await registerWebhook(proCtx(), {
+        callbackUrl: 'https://hooks.example.com/wm',
+        chokepointIds: [],
+        // alertThreshold omitted — proto3 `optional int32` arrives as undefined
+      });
+      const record = JSON.parse(calls[0][0][2]);
+      assert.equal(record.alertThreshold, 50);
+    });
+
+    it('alertThreshold explicit 0 is preserved (deliver every alert)', async () => {
+      // #3242 followup #4 — proto3 `optional` lets the handler distinguish
+      // "partner explicitly sent 0" from "partner omitted the field". The
+      // pre-fix handler coerced both to 50, silently dropping the partner's
+      // intent to receive every disruption.
       const calls = stubRedisOk();
       await registerWebhook(proCtx(), {
         callbackUrl: 'https://hooks.example.com/wm',
@@ -254,7 +266,7 @@ describe('ShippingV2Service handlers', () => {
         alertThreshold: 0,
       });
       const record = JSON.parse(calls[0][0][2]);
-      assert.equal(record.alertThreshold, 50);
+      assert.equal(record.alertThreshold, 0);
     });
 
     it('empty chokepointIds subscribes to the full CHOKEPOINT_REGISTRY', async () => {

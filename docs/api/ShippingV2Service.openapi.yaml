@@ -277,7 +277,12 @@ components:
                     maximum: 100
                     minimum: 0
                     format: int32
-                    description: Disruption-score threshold for delivery, 0-100. Default 50.
+                    description: |-
+                        Disruption-score threshold for delivery, 0-100. Default 50.
+                         proto3 `optional` so the handler can distinguish "partner explicitly sent
+                         0 (deliver every alert)" from "partner omitted the field (apply default
+                         50)". Without `optional`, both serialise to the proto3 scalar default of
+                         0 and the handler can't tell them apart — flagged in #3242 review.
             required:
                 - callbackUrl
             description: |-
