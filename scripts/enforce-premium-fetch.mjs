@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S npx tsx
 /**
  * Validates that every `new <ServiceClient>(...)` instantiation in src/ which
  * calls a method whose generated path is in PREMIUM_RPC_PATHS is constructed
@@ -11,7 +11,10 @@
  * country-intel) which was fixed manually because there was no enforcement.
  *
  * How it works:
- *   1. Parse src/shared/premium-paths.ts → set of premium HTTP paths.
+ *   1. Dynamic `import()` of PREMIUM_RPC_PATHS from src/shared/premium-paths.ts
+ *      (via tsx, same pattern as enforce-rate-limit-policies.mjs) → set of
+ *      premium HTTP paths. Live import means reformatting the source literal
+ *      can never desync the lint from the runtime (#3287 follow-up).
  *   2. Walk src/generated/client/ → map each ServiceClient class to its
  *      method-name → path table (the `let path = "/api/..."` line each
  *      generated method opens with).
@@ -28,6 +31,7 @@
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, basename } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import ts from 'typescript';
 
 const ROOT = new URL('..', import.meta.url).pathname;
@@ -44,16 +48,18 @@ function walk(dir, fn) {
   }
 }
 
-function loadPremiumPaths() {
-  const src = readFileSync(PREMIUM_PATHS_SRC, 'utf8');
-  const re = /'(\/api\/[^']+)'/g;
-  const paths = new Set();
-  let m;
-  while ((m = re.exec(src)) !== null) paths.add(m[1]);
-  if (paths.size === 0) {
-    throw new Error(`No premium paths parsed from ${PREMIUM_PATHS_SRC}`);
+async function loadPremiumPaths() {
+  // Dynamic import via file URL — runs under tsx (the shebang) which
+  // transparently transpiles TS. Importing the live Set means any reformat of
+  // the source literal (single→double quotes, spread, helper-computed entries)
+  // can never desync the lint from the runtime.
+  const mod = await import(pathToFileURL(PREMIUM_PATHS_SRC).href);
+  if (!(mod.PREMIUM_RPC_PATHS instanceof Set) || mod.PREMIUM_RPC_PATHS.size === 0) {
+    throw new Error(
+      `${PREMIUM_PATHS_SRC} must export PREMIUM_RPC_PATHS as a non-empty Set<string> — the lint relies on it.`,
+    );
   }
-  return paths;
+  return mod.PREMIUM_RPC_PATHS;
 }
 
 function loadClientClassMap() {
@@ -61,17 +67,26 @@ function loadClientClassMap() {
   walk(GEN_CLIENT_DIR, (file) => {
     if (basename(file) !== 'service_client.ts') return;
     const src = readFileSync(file, 'utf8');
+    // Collect every class-open match first — current codegen emits one
+    // ServiceClient per file, but a template change could emit multiple and
+    // we'd silently drop all but the first if we only grabbed one match.
     const classRe = /export class (\w+ServiceClient)\s*\{/g;
-    const classMatch = classRe.exec(src);
-    if (!classMatch) return;
-    const className = classMatch[1];
-    const methods = new Map();
-    const methodRe = /async (\w+)\s*\([^)]*\)\s*:\s*Promise<[^>]+>\s*\{\s*let path = "([^"]+)"/g;
-    let mm;
-    while ((mm = methodRe.exec(src)) !== null) {
-      methods.set(mm[1], mm[2]);
+    const classMatches = [...src.matchAll(classRe)];
+    if (classMatches.length === 0) return;
+    for (let i = 0; i < classMatches.length; i++) {
+      const m = classMatches[i];
+      const className = m[1];
+      const bodyStart = m.index + m[0].length;
+      const bodyEnd = i + 1 < classMatches.length ? classMatches[i + 1].index : src.length;
+      const body = src.slice(bodyStart, bodyEnd);
+      const methodRe = /async (\w+)\s*\([^)]*\)\s*:\s*Promise<[^>]+>\s*\{\s*let path = "([^"]+)"/g;
+      const methods = new Map();
+      let mm;
+      while ((mm = methodRe.exec(body)) !== null) {
+        methods.set(mm[1], mm[2]);
+      }
+      map.set(className, methods);
     }
-    map.set(className, methods);
   });
   if (map.size === 0) {
     throw new Error(`No ServiceClient classes parsed from ${GEN_CLIENT_DIR}`);
@@ -183,8 +198,8 @@ function checkFile(filePath, clientClassMap, premiumPaths) {
   return violations;
 }
 
-function main() {
-  const premiumPaths = loadPremiumPaths();
+async function main() {
+  const premiumPaths = await loadPremiumPaths();
   const clientClassMap = loadClientClassMap();
   const files = collectSourceFiles();
 
@@ -229,4 +244,7 @@ function main() {
   );
 }
 
-main();
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
