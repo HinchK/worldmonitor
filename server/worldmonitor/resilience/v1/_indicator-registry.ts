@@ -479,7 +479,7 @@ export const INDICATOR_REGISTRY: IndicatorSpec[] = [
   {
     id: 'lowCarbonGenerationShare',
     dimension: 'energy',
-    description: 'Nuclear + renewable share of electricity generation (EG.ELC.NUCL.ZS + EG.ELC.RNEW.ZS). Absorbs the legacy renewShare and adds nuclear credit.',
+    description: 'Low-carbon share of electricity generation: nuclear + renewables-ex-hydro + hydroelectric (World Bank EG.ELC.NUCL.ZS + EG.ELC.RNEW.ZS + EG.ELC.HYRO.ZS). Hydro is summed separately because WB RNEW explicitly excludes hydroelectric — omitting HYRO would collapse this indicator to ~0 for Norway (~95% hydro), Paraguay (~99%), Brazil (~65%), Canada (~60%). Absorbs the legacy renewShare and adds nuclear + hydro credit.',
     direction: 'higherBetter',
     goalposts: { worst: 0, best: 80 },
     weight: 0.2,

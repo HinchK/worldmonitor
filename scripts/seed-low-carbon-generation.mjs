@@ -1,20 +1,29 @@
 #!/usr/bin/env node
 
 // PR 1 of the resilience repair plan (§3.3). Writes the per-country
-// low-carbon share of electricity generation (nuclear + renewables).
-// Read by scoreEnergy v2 via `resilience:low-carbon-generation:v1`.
+// low-carbon share of electricity generation (nuclear + renewables
+// + hydroelectric). Read by scoreEnergy v2 via
+// `resilience:low-carbon-generation:v1`.
 //
-// Source: World Bank WDI. Two indicators summed per country:
+// Source: World Bank WDI. THREE indicators summed per country:
 //   - EG.ELC.NUCL.ZS: electricity production from nuclear (% of total)
 //   - EG.ELC.RNEW.ZS: electricity production from renewable sources
-//                     excluding hydroelectric (% of total)
+//                     EXCLUDING hydroelectric (% of total)
+//   - EG.ELC.HYRO.ZS: electricity production from hydroelectric
+//                     sources (% of total)
 //
-// Both series are annual; WDI reports latest observed year per
+// Hydro is included alongside RNEW because the WB RNEW series
+// explicitly excludes hydroelectric — omitting HYRO would collapse
+// this indicator to ~0 for Norway (~95% hydro), Paraguay (~99%),
+// Brazil (~65%), Canada (~60%) and produce rankings that contradict
+// the power-system security intent.
+//
+// All three series are annual; WDI reports latest observed year per
 // country. We fetch the most-recent value (mrv=1) and sum by ISO2.
-// Missing half of the pair (e.g. a country with nuclear data but no
-// renewable filing) still produces a value using just the observed
-// half — the scorer treats the goalpost 0..80 as saturating, so
-// partial coverage is better than `null`.
+// Missing any of the three (e.g. a country with no nuclear filing)
+// is treated as 0 for that slice — the scorer's 0..80 saturating
+// goalpost tolerates partial coverage without dropping the indicator
+// to null.
 
 import { loadEnvFile, CHROME_UA, runSeed } from './_seed-utils.mjs';
 import iso3ToIso2 from './shared/iso3-to-iso2.json' with { type: 'json' };
@@ -24,7 +33,7 @@ loadEnvFile(import.meta.url);
 const WB_BASE = 'https://api.worldbank.org/v2';
 const CANONICAL_KEY = 'resilience:low-carbon-generation:v1';
 const CACHE_TTL = 35 * 24 * 3600;
-const INDICATORS = ['EG.ELC.NUCL.ZS', 'EG.ELC.RNEW.ZS'];
+const INDICATORS = ['EG.ELC.NUCL.ZS', 'EG.ELC.RNEW.ZS', 'EG.ELC.HYRO.ZS'];
 
 async function fetchIndicator(indicatorId) {
   const pages = [];
@@ -60,19 +69,21 @@ function collectByIso2(records) {
 }
 
 async function fetchLowCarbonGeneration() {
-  const [nuclearRecords, renewRecords] = await Promise.all(INDICATORS.map(fetchIndicator));
+  const [nuclearRecords, renewRecords, hydroRecords] = await Promise.all(INDICATORS.map(fetchIndicator));
   const nuclearByIso = collectByIso2(nuclearRecords);
   const renewByIso = collectByIso2(renewRecords);
+  const hydroByIso = collectByIso2(hydroRecords);
 
-  const allIso = new Set([...nuclearByIso.keys(), ...renewByIso.keys()]);
+  const allIso = new Set([...nuclearByIso.keys(), ...renewByIso.keys(), ...hydroByIso.keys()]);
   const countries = {};
   for (const iso2 of allIso) {
     const nuc = nuclearByIso.get(iso2);
     const ren = renewByIso.get(iso2);
-    const sum = (nuc?.value ?? 0) + (ren?.value ?? 0);
-    // Year: most-recent of the two (they can diverge by a year or two
+    const hyd = hydroByIso.get(iso2);
+    const sum = (nuc?.value ?? 0) + (ren?.value ?? 0) + (hyd?.value ?? 0);
+    // Year: most-recent of the three (they can diverge by a year or two
     // between filings). Use the MAX so freshness reflects newest input.
-    const years = [nuc?.year, ren?.year].filter((y) => y != null);
+    const years = [nuc?.year, ren?.year, hyd?.year].filter((y) => y != null);
     countries[iso2] = {
       value: Math.min(sum, 100), // guard against impossible sums from revised filings
       year: years.length > 0 ? Math.max(...years) : null,
